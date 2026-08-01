@@ -182,7 +182,7 @@
       }
     });
 
-    window.moleculesMoving = true;
+    window.moleculesMoving = false;
 
     // 再現可能な簡易乱数
     function seededRandom(seed) {
@@ -218,7 +218,7 @@
          ${randomBetween(0, 360)}`
       );
 
-      const speed = randomBetween(0.035, 0.075);
+      const speed = randomBetween(0.25, 0.45);
       const vx = speed * (random() < 0.5 ? -1 : 1);
       const vy = speed * (random() < 0.5 ? -1 : 1);
       const vz = speed * (random() < 0.5 ? -1 : 1);
@@ -265,11 +265,14 @@
         );
       }
 
-      document.querySelector("#motionButton").addEventListener("click", (event) => {
-        window.moleculesMoving = !window.moleculesMoving;
-        event.target.textContent =
-          window.moleculesMoving ? "分子運動を止める" : "分子運動を再開";
-      });
+     document.querySelector("#motionButton").addEventListener("click", (event) => {
+  window.moleculesMoving = !window.moleculesMoving;
+
+  event.target.textContent =
+    window.moleculesMoving
+      ? "静止モードにする"
+      : "熱運動を激しくする";
+});
     });
   </script>
 </head>
@@ -286,7 +289,7 @@
       水蒸気・Ar・CO₂などは省略<br />
       速度は観察しやすいように調整
     </small><br />
-    <button id="motionButton">分子運動を止める</button>
+    <button id="motionButton">熱運動を激しくする</button>
   </div>
 
   <a-scene
@@ -321,44 +324,15 @@
         マーカー面を立方体の底面中央とする。
         立方体の中心は床から0.5 m上。
       -->
-      <a-entity id="model-root" model-info-label position="0 0 -3" scale="10 10 10">
+      <a-entity id="model-root" model-info-label position="0 0 0" scale="10 10 10">
 
-        <!-- 1 m³の透明な立方体 -->
-        <a-box
-          position="0 0.5 0"
-          width="1"
-          height="1"
-          depth="1"
-          material="color:#ffffff;
-                    transparent:true;
-                    opacity:0.72;
-                    wireframe:true">
-        </a-box>
-
-        <!-- 底面を分かりやすくする薄い面 -->
-        <a-plane
-          position="0 0.002 0"
-          rotation="-90 0 0"
-          width="1"
-          height="1"
-          material="color:#d7ecff;
-                    transparent:true;
-                    opacity:0.12;
-                    side:double">
-        </a-plane>
+       
+      
 
         <!-- 分子を入れる場所 -->
         <a-entity id="gas-container"></a-entity>
 
-        <!-- 一辺1 mの表示 -->
-        <a-text
-          value="1 m"
-          position="0 -0.055 0.52"
-          rotation="-90 0 0"
-          align="center"
-          color="#ffffff"
-          width="0.35">
-        </a-text>
+       
 
         <!-- 照明 -->
         <a-light type="ambient" intensity="1.0"></a-light>
