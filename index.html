@@ -2,79 +2,164 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>1 m³ 空気分子AR</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- A-Frame と AR.js -->
-  <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@ar-js-org/ar.js@3.4.7/aframe/build/aframe-ar.min.js"></script>
+  <title>1億倍の分子モデルAR</title>
+
+  <!-- A-Frame -->
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+
+  <!-- AR.js -->
+  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js"></script>
 
   <style>
+    html,
     body {
       margin: 0;
+      width: 100%;
+      height: 100%;
       overflow: hidden;
-      font-family: sans-serif;
+      font-family:
+        -apple-system, BlinkMacSystemFont, "Segoe UI",
+        "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+      background: #000;
     }
 
-    #panel {
+    #infoPanel {
       position: fixed;
-      z-index: 10;
-      top: 10px;
-      left: 10px;
-      max-width: 310px;
-      padding: 10px 12px;
-      color: white;
+      top: 12px;
+      left: 12px;
+      z-index: 20;
+      width: min(370px, calc(100vw - 48px));
+      padding: 16px 18px;
+      border: 1px solid rgba(255, 255, 255, 0.55);
+      border-radius: 12px;
+      color: #fff;
+      background: rgba(0, 0, 0, 0.72);
+      line-height: 1.55;
+      font-size: 15px;
+      backdrop-filter: blur(4px);
+    }
+
+    #panelTitle {
+      display: inline-block;
+      margin-bottom: 5px;
+      font-size: 21px;
+    }
+
+    #panelDetails {
+      margin-top: 4px;
+    }
+
+    .red {
+      color: #ff6b6b;
+    }
+
+    .blue {
+      color: #65a9ff;
+    }
+
+    #modeButton {
+      margin-top: 12px;
+      padding: 10px 16px;
+      border: 0;
+      border-radius: 9px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      color: #0b2d49;
+      background: #e9f5ff;
+    }
+
+    #statusMessage {
+      position: fixed;
+      right: 12px;
+      bottom: 12px;
+      z-index: 20;
+      max-width: min(440px, calc(100vw - 48px));
+      padding: 10px 14px;
+      border-radius: 9px;
+      color: #fff;
       background: rgba(0, 0, 0, 0.68);
-      border-radius: 10px;
-      font-size: 14px;
+      font-size: 13px;
       line-height: 1.45;
     }
 
-    #panel strong {
-      font-size: 16px;
-    }
+    @media (max-width: 640px) {
+      #infoPanel {
+        padding: 12px 14px;
+        font-size: 13px;
+      }
 
-    #panel button {
-      margin-top: 8px;
-      padding: 7px 10px;
-      border: 0;
-      border-radius: 7px;
-      cursor: pointer;
-    }
+      #panelTitle {
+        font-size: 18px;
+      }
 
-    #panel small {
-      display: inline-block;
-      margin-top: 4px;
-      color: #e7e7e7;
-      font-size: 12px;
-      line-height: 1.4;
+      #statusMessage {
+        font-size: 11px;
+      }
     }
-
-    .red { color: #ff6b6b; }
-    .blue { color: #65a8ff; }
   </style>
 
   <script>
+    "use strict";
+
     /*
-      1 m³の空気を長さ方向に1億倍して観察するモデル。
-      実際の1 m³中には室温・1気圧で約2.4×10^25個の分子がある。
-      長さを1億倍すると体積倍率は10^24倍なので、
-      この模型の1 m³には約24個が対応する。
+      --------------------------------------------------
+      基本設定
+      --------------------------------------------------
+
+      AR.jsのマーカー座標では、
+      ・X：マーカー面の左右
+      ・Z：マーカー面の上下
+      ・Y：マーカー面に垂直な奥行き
+      です。
+
+      マーカーを垂直に立て、カメラから見て
+      「紙の向こう側」に分子を出すため、
+      このコードではYをマイナス側にしています。
+
+      もし分子が自分側へ出る場合は、
+      DEPTH_SIGN を -1 から 1 に変更してください。
     */
 
-    const BOX_SIZE = 1.0;       // 立方体の一辺 [m]
-    const OXYGEN_COUNT = 5;     // O₂
-    const NITROGEN_COUNT = 19;  // N₂
-    const MOLECULE_RADIUS = 0.014;
-    const ATOM_SEPARATION = 0.012;
+    const DEPTH_SIGN = -1;
 
-    // 分子を立方体内で往復運動させるコンポーネント
+    // 乾燥空気の簡略モデル
+    const OXYGEN_COUNT = 5;
+    const NITROGEN_COUNT = 19;
+
+    // 20 cm角（8.0 L）の液体の水
+    const WATER_COUNT = 268;
+
+    // 分子模型の大きさ（m）
+    const GAS_ATOM_RADIUS = 0.014;
+    const GAS_ATOM_SEPARATION = 0.012;
+
+    const WATER_O_RADIUS = 0.010;
+    const WATER_H_RADIUS = 0.0065;
+
+    function randomBetween(min, max) {
+      return min + Math.random() * (max - min);
+    }
+
+    function randomSignedSpeed(min, max) {
+      const speed = randomBetween(min, max);
+      return Math.random() < 0.5 ? -speed : speed;
+    }
+
+    /*
+      --------------------------------------------------
+      気体分子の運動
+      --------------------------------------------------
+      1 m × 1 m × 1 m の見えない範囲内を直線運動し、
+      境界で反射します。
+    */
     AFRAME.registerComponent("gas-motion", {
       schema: {
-        vx: { type: "number", default: 0.04 },
-        vy: { type: "number", default: 0.05 },
-        vz: { type: "number", default: 0.03 }
+        vx: { type: "number", default: 0.12 },
+        vy: { type: "number", default: 0.12 },
+        vz: { type: "number", default: 0.12 }
       },
 
       init: function () {
@@ -85,231 +170,413 @@
         );
       },
 
-      tick: function (time, deltaTime) {
-        if (!window.moleculesMoving) return;
-
+      tick: function (_time, deltaTime) {
         const dt = Math.min(deltaTime / 1000, 0.05);
-        const p = this.el.object3D.position;
-        p.addScaledVector(this.velocity, dt);
+        const position = this.el.object3D.position;
 
-        // 分子が線から少しはみ出さないように余白を設ける
+        position.addScaledVector(this.velocity, dt);
+
+        // マーカー面上の横方向
         const minX = -0.47;
         const maxX =  0.47;
-        const minY =  0.03;
-        const maxY =  0.97;
+
+        // マーカー面上の縦方向
         const minZ = -0.47;
         const maxZ =  0.47;
 
-        if (p.x < minX || p.x > maxX) {
+        // マーカー面から向こう側へ約1 m
+        const nearY = DEPTH_SIGN * 0.03;
+        const farY  = DEPTH_SIGN * 0.97;
+        const minY = Math.min(nearY, farY);
+        const maxY = Math.max(nearY, farY);
+
+        if (position.x <= minX || position.x >= maxX) {
           this.velocity.x *= -1;
-          p.x = THREE.MathUtils.clamp(p.x, minX, maxX);
+          position.x = THREE.MathUtils.clamp(position.x, minX, maxX);
         }
-        if (p.y < minY || p.y > maxY) {
+
+        if (position.y <= minY || position.y >= maxY) {
           this.velocity.y *= -1;
-          p.y = THREE.MathUtils.clamp(p.y, minY, maxY);
+          position.y = THREE.MathUtils.clamp(position.y, minY, maxY);
         }
-        if (p.z < minZ || p.z > maxZ) {
+
+        if (position.z <= minZ || position.z >= maxZ) {
           this.velocity.z *= -1;
-          p.z = THREE.MathUtils.clamp(p.z, minZ, maxZ);
+          position.z = THREE.MathUtils.clamp(position.z, minZ, maxZ);
         }
-
-        // 飛び方が分かる程度のゆっくりした回転
-        this.el.object3D.rotation.y += dt * 0.7;
-        this.el.object3D.rotation.z += dt * 0.35;
       }
     });
 
+    /*
+      --------------------------------------------------
+      液体中の水分子の運動
+      --------------------------------------------------
+      20 cm角の範囲内で、初期位置の周囲を小さく揺れます。
+      気体のように長距離を直線運動させません。
+    */
+    AFRAME.registerComponent("liquid-motion", {
+      schema: {
+        amplitude: { type: "number", default: 0.0025 },
+        speed: { type: "number", default: 2.0 },
+        phaseX: { type: "number", default: 0 },
+        phaseY: { type: "number", default: 0 },
+        phaseZ: { type: "number", default: 0 }
+      },
 
-    // 立方体の右上に、常にカメラを向く日本語ラベルを表示する
-    AFRAME.registerComponent("model-info-label", {
       init: function () {
-        const canvas = document.createElement("canvas");
-        canvas.width = 1024;
-        canvas.height = 620;
+        const p = this.el.object3D.position;
+        this.basePosition = new THREE.Vector3(p.x, p.y, p.z);
+      },
 
-        const context = canvas.getContext("2d");
-        context.clearRect(0, 0, canvas.width, canvas.height);
+      tick: function (time) {
+        const t = time / 1000;
+        const d = this.data;
+        const p = this.el.object3D.position;
 
-        // 半透明の背景
-        context.fillStyle = "rgba(0, 0, 0, 0.76)";
-        context.beginPath();
-        context.roundRect(20, 20, 984, 580, 38);
-        context.fill();
+        p.x =
+          this.basePosition.x +
+          d.amplitude * Math.sin(d.speed * t + d.phaseX);
 
-        // 枠線
-        context.strokeStyle = "rgba(255, 255, 255, 0.9)";
-        context.lineWidth = 8;
-        context.stroke();
+        p.y =
+          this.basePosition.y +
+          d.amplitude * Math.sin(d.speed * 0.83 * t + d.phaseY);
 
-        context.textBaseline = "top";
-        context.fillStyle = "#ffffff";
-        context.font = 'bold 72px "Noto Sans JP", "Yu Gothic", sans-serif';
-        context.fillText("1億倍の空気分子モデル", 70, 65);
-
-        const lines = [
-          "・一辺：1 m（体積 1 m³）",
-          "・乾燥空気の簡略モデル",
-          "・O₂：5個　N₂：19個",
-          "・水蒸気・Ar・CO₂などは省略",
-          "・運動速度は観察用に遅く表示"
-        ];
-
-        context.font = '46px "Noto Sans JP", "Yu Gothic", sans-serif';
-        let y = 165;
-        for (const line of lines) {
-          context.fillText(line, 75, y);
-          y += 78;
-        }
-
-        const texture = new THREE.CanvasTexture(canvas);
-        texture.colorSpace = THREE.SRGBColorSpace;
-        texture.needsUpdate = true;
-
-        const material = new THREE.SpriteMaterial({
-          map: texture,
-          transparent: true,
-          depthTest: false
-        });
-
-        const sprite = new THREE.Sprite(material);
-
-        // 立方体の右上付近。Spriteなので常にカメラ方向を向く。
-        sprite.position.set(0.72, 1.12, 0);
-        sprite.scale.set(0.72, 0.44, 1);
-        sprite.renderOrder = 999;
-
-        this.el.object3D.add(sprite);
+        p.z =
+          this.basePosition.z +
+          d.amplitude * Math.sin(d.speed * 1.17 * t + d.phaseZ);
       }
     });
 
-    window.moleculesMoving = false;
-
-    // 再現可能な簡易乱数
-    function seededRandom(seed) {
-      let value = seed % 2147483647;
-      if (value <= 0) value += 2147483646;
-      return function () {
-        value = value * 16807 % 2147483647;
-        return (value - 1) / 2147483646;
-      };
-    }
-
-    const random = seededRandom(20260801);
-
-    function randomBetween(min, max) {
-      return min + (max - min) * random();
-    }
-
-    // 二原子分子を作る
     function createDiatomicMolecule(color, label, index) {
       const molecule = document.createElement("a-entity");
 
       molecule.setAttribute(
         "position",
-        `${randomBetween(-0.43, 0.43)}
-         ${randomBetween(0.08, 0.92)}
-         ${randomBetween(-0.43, 0.43)}`
+        [
+          randomBetween(-0.43, 0.43),
+          DEPTH_SIGN * randomBetween(0.08, 0.92),
+          randomBetween(-0.43, 0.43)
+        ].join(" ")
       );
 
       molecule.setAttribute(
         "rotation",
-        `${randomBetween(0, 360)}
-         ${randomBetween(0, 360)}
-         ${randomBetween(0, 360)}`
+        [
+          randomBetween(0, 360),
+          randomBetween(0, 360),
+          randomBetween(0, 360)
+        ].join(" ")
       );
 
-      const speed = randomBetween(0.25, 0.45);
-      const vx = speed * (random() < 0.5 ? -1 : 1);
-      const vy = speed * (random() < 0.5 ? -1 : 1);
-      const vz = speed * (random() < 0.5 ? -1 : 1);
-      molecule.setAttribute("gas-motion", `vx:${vx}; vy:${vy}; vz:${vz}`);
+      molecule.setAttribute(
+        "gas-motion",
+        [
+          `vx:${randomSignedSpeed(0.10, 0.22)}`,
+          `vy:${randomSignedSpeed(0.10, 0.22)}`,
+          `vz:${randomSignedSpeed(0.10, 0.22)}`
+        ].join(";")
+      );
 
-      // 原子1
+      molecule.setAttribute("data-label", `${label}${index + 1}`);
+
       const atom1 = document.createElement("a-sphere");
-      atom1.setAttribute("radius", MOLECULE_RADIUS);
-      atom1.setAttribute("position", `${-ATOM_SEPARATION / 2} 0 0`);
+      atom1.setAttribute("radius", GAS_ATOM_RADIUS);
+      atom1.setAttribute(
+        "position",
+        `${-GAS_ATOM_SEPARATION} 0 0`
+      );
       atom1.setAttribute(
         "material",
         `color:${color}; roughness:0.35; metalness:0.05`
       );
 
-      // 原子2
       const atom2 = document.createElement("a-sphere");
-      atom2.setAttribute("radius", MOLECULE_RADIUS);
-      atom2.setAttribute("position", `${ATOM_SEPARATION / 2} 0 0`);
+      atom2.setAttribute("radius", GAS_ATOM_RADIUS);
+      atom2.setAttribute(
+        "position",
+        `${GAS_ATOM_SEPARATION} 0 0`
+      );
       atom2.setAttribute(
         "material",
         `color:${color}; roughness:0.35; metalness:0.05`
       );
 
-      molecule.setAttribute("data-label", `${label}${index + 1}`);
       molecule.appendChild(atom1);
       molecule.appendChild(atom2);
+
       return molecule;
     }
 
-    window.addEventListener("DOMContentLoaded", () => {
-      const gasContainer = document.querySelector("#gas-container");
+    function createWaterMolecule(index, position) {
+      const molecule = document.createElement("a-entity");
 
-      // 酸素分子：赤5個
+      molecule.setAttribute(
+        "position",
+        `${position.x} ${position.y} ${position.z}`
+      );
+
+      molecule.setAttribute(
+        "rotation",
+        [
+          randomBetween(0, 360),
+          randomBetween(0, 360),
+          randomBetween(0, 360)
+        ].join(" ")
+      );
+
+      molecule.setAttribute(
+        "liquid-motion",
+        [
+          `amplitude:${randomBetween(0.0015, 0.0030)}`,
+          `speed:${randomBetween(1.4, 2.8)}`,
+          `phaseX:${randomBetween(0, Math.PI * 2)}`,
+          `phaseY:${randomBetween(0, Math.PI * 2)}`,
+          `phaseZ:${randomBetween(0, Math.PI * 2)}`
+        ].join(";")
+      );
+
+      molecule.setAttribute("data-label", `H2O-${index + 1}`);
+
+      // 酸素原子：赤
+      const oxygen = document.createElement("a-sphere");
+      oxygen.setAttribute("radius", WATER_O_RADIUS);
+      oxygen.setAttribute("position", "0 0 0");
+      oxygen.setAttribute(
+        "material",
+        "color:#e53935; roughness:0.35; metalness:0.05"
+      );
+
+      // 水素原子：白
+      const hydrogen1 = document.createElement("a-sphere");
+      hydrogen1.setAttribute("radius", WATER_H_RADIUS);
+      hydrogen1.setAttribute("position", "0.011 0.008 0");
+      hydrogen1.setAttribute(
+        "material",
+        "color:#ffffff; roughness:0.35; metalness:0.05"
+      );
+
+      const hydrogen2 = document.createElement("a-sphere");
+      hydrogen2.setAttribute("radius", WATER_H_RADIUS);
+      hydrogen2.setAttribute("position", "-0.011 0.008 0");
+      hydrogen2.setAttribute(
+        "material",
+        "color:#ffffff; roughness:0.35; metalness:0.05"
+      );
+
+      molecule.appendChild(oxygen);
+      molecule.appendChild(hydrogen1);
+      molecule.appendChild(hydrogen2);
+
+      return molecule;
+    }
+
+    /*
+      20 cm角の中に水分子を格子状に置き、
+      少しだけランダムにずらします。
+      268個が極端に重なりにくくなります。
+    */
+    function createWaterPositions(count) {
+      const positions = [];
+
+      const nx = 7;
+      const ny = 7;
+      const nz = 6;
+
+      const minX = -0.085;
+      const maxX =  0.085;
+
+      const nearY = DEPTH_SIGN * 0.015;
+      const farY  = DEPTH_SIGN * 0.185;
+      const minY = Math.min(nearY, farY);
+      const maxY = Math.max(nearY, farY);
+
+      const minZ = -0.085;
+      const maxZ =  0.085;
+
+      const stepX = (maxX - minX) / (nx - 1);
+      const stepY = (maxY - minY) / (ny - 1);
+      const stepZ = (maxZ - minZ) / (nz - 1);
+
+      for (let ix = 0; ix < nx; ix++) {
+        for (let iy = 0; iy < ny; iy++) {
+          for (let iz = 0; iz < nz; iz++) {
+            positions.push({
+              x: minX + ix * stepX + randomBetween(-0.002, 0.002),
+              y: minY + iy * stepY + randomBetween(-0.002, 0.002),
+              z: minZ + iz * stepZ + randomBetween(-0.002, 0.002)
+            });
+          }
+        }
+      }
+
+      // 配置の規則性を弱めるため順番を混ぜる
+      for (let i = positions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [positions[i], positions[j]] = [positions[j], positions[i]];
+      }
+
+      return positions.slice(0, count);
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      const gasContainer =
+        document.querySelector("#gas-container");
+
+      const waterContainer =
+        document.querySelector("#water-container");
+
+      const modeButton =
+        document.querySelector("#modeButton");
+
+      const panelTitle =
+        document.querySelector("#panelTitle");
+
+      const panelDetails =
+        document.querySelector("#panelDetails");
+
+      if (
+        !gasContainer ||
+        !waterContainer ||
+        !modeButton ||
+        !panelTitle ||
+        !panelDetails
+      ) {
+        console.error("必要なHTML要素が見つかりません。");
+        return;
+      }
+
+      // 酸素分子 O2：5個
       for (let i = 0; i < OXYGEN_COUNT; i++) {
         gasContainer.appendChild(
           createDiatomicMolecule("#e53935", "O2-", i)
         );
       }
 
-      // 窒素分子：青19個
+      // 窒素分子 N2：19個
       for (let i = 0; i < NITROGEN_COUNT; i++) {
         gasContainer.appendChild(
           createDiatomicMolecule("#1565c0", "N2-", i)
         );
       }
 
-     document.querySelector("#motionButton").addEventListener("click", (event) => {
-  window.moleculesMoving = !window.moleculesMoving;
+      // 水分子 H2O：約268個
+      const waterPositions =
+        createWaterPositions(WATER_COUNT);
 
-  event.target.textContent =
-    window.moleculesMoving
-      ? "静止モードにする"
-      : "熱運動を激しくする";
-});
+      waterPositions.forEach((position, index) => {
+        waterContainer.appendChild(
+          createWaterMolecule(index, position)
+        );
+      });
+
+      let currentMode = "gas";
+
+      modeButton.addEventListener("click", () => {
+        if (currentMode === "gas") {
+          gasContainer.setAttribute("visible", false);
+          waterContainer.setAttribute("visible", true);
+
+          currentMode = "water";
+
+          modeButton.textContent =
+            "乾燥空気に切り替え";
+
+          panelTitle.textContent =
+            "1億倍の水分子モデル";
+
+          panelDetails.innerHTML = `
+            観察範囲：20 cm × 20 cm × 20 cm<br />
+            体積：8.0 L<br />
+            <span class="red">
+              ● 水分子 H₂O：約268個
+            </span><br />
+            酸素原子：赤　水素原子：白<br />
+            <small>
+              水分子は互いに近接しながら絶えず運動する<br />
+              動きは観察しやすいように模式化
+            </small>
+          `;
+        } else {
+          gasContainer.setAttribute("visible", true);
+          waterContainer.setAttribute("visible", false);
+
+          currentMode = "gas";
+
+          modeButton.textContent =
+            "液体の水に切り替え";
+
+          panelTitle.textContent =
+            "1億倍の空気分子モデル";
+
+          panelDetails.innerHTML = `
+            観察範囲：1 m × 1 m × 1 m<br />
+            体積：1 m³<br />
+            <span class="red">
+              ● 酸素分子 O₂：5個/m³
+            </span><br />
+            <span class="blue">
+              ● 窒素分子 N₂：19個/m³
+            </span><br />
+            合計：24個/m³<br />
+            <small>
+              乾燥空気の簡略モデル<br />
+              水蒸気・Ar・CO₂などは省略<br />
+              動きは観察しやすいように調整
+            </small>
+          `;
+        }
+      });
     });
   </script>
 </head>
 
 <body>
-  <div id="panel">
-    <strong>1億倍の空気分子モデル</strong><br />
-    一辺：1 m<br />
-    <span class="red">● 酸素分子 O₂：5個/ｍ³</span><br />
-    <span class="blue">● 窒素分子 N₂：19個/ｍ³</span><br />
-    合計：24個/ｍ³<br />
-   分子の大きさを1億倍した乾燥空気モデル<br />
-    <small>
-      水蒸気・Ar・CO₂などは省略<br />
-      速度は観察しやすいように調整
-    </small><br />
-    <button id="motionButton">熱運動を激しくする</button>
+  <div id="infoPanel">
+    <strong id="panelTitle">
+      1億倍の空気分子モデル
+    </strong>
+
+    <div id="panelDetails">
+      観察範囲：1 m × 1 m × 1 m<br />
+      体積：1 m³<br />
+
+      <span class="red">
+        ● 酸素分子 O₂：5個/m³
+      </span><br />
+
+      <span class="blue">
+        ● 窒素分子 N₂：19個/m³
+      </span><br />
+
+      合計：24個/m³<br />
+
+      <small>
+        乾燥空気の簡略モデル<br />
+        水蒸気・Ar・CO₂などは省略<br />
+        動きは観察しやすいように調整
+      </small>
+    </div>
+
+    <button id="modeButton">
+      液体の水に切り替え
+    </button>
+  </div>
+
+  <div id="statusMessage">
+    マーカーを垂直に立て、正面から映してください。<br />
+    共通の十字目盛りは実寸20 cmです。
   </div>
 
   <a-scene
     embedded
-    renderer="antialias: true; colorManagement: true;"
-    arjs="sourceType: webcam;
-          detectionMode: mono;
-          trackingMethod: best;
-          debugUIEnabled: false;"
-    vr-mode-ui="enabled: false"
+    vr-mode-ui="enabled:false"
+    renderer="antialias:true; alpha:true; logarithmicDepthBuffer:true"
+    arjs="sourceType:webcam; debugUIEnabled:false; trackingMethod:best;"
   >
     <!--
-      Hiroマーカーの実物幅を10 cmとして認識させる。
-      AR.jsではsizeをメートル単位で指定する。
-    -->
-    <!--
-      オリジナルマーカー版
-      印刷した黒い外枠の一辺を10.0 cmにする。
-      AR.jsでは実寸をメートル単位で指定するため size="0.10"。
-      pattern-air.patt は index.html と同じフォルダーに置く。
+      新しいマーカーに変えるときは、
+      下の pattern-air.patt を新しいファイル名に変更します。
+      例：pattern-molecule.patt
     -->
     <a-marker
       type="pattern"
@@ -318,31 +585,88 @@
       smooth="true"
       smooth-count="10"
       smooth-tolerance="0.01"
-      smooth-threshold="5">
+      smooth-threshold="5"
+    >
+      <!-- 空気 -->
+      <a-entity id="gas-container"></a-entity>
+
+      <!-- 水：最初は非表示 -->
+      <a-entity
+        id="water-container"
+        visible="false"
+      ></a-entity>
 
       <!--
-        マーカー面を立方体の底面中央とする。
-        立方体の中心は床から0.5 m上。
+        共通の実寸20 cmスケール。
+        マーカーを立てる前提なので、
+        X方向が左右、Z方向が上下です。
       -->
-      <a-entity id="model-root" model-info-label position="0 0 0" scale="10 10 10">
+      <a-entity
+        id="scale-cross"
+        position="0 0.004 0"
+      >
+        <!-- 横20 cm -->
+        <a-box
+          position="0 0 0"
+          width="0.20"
+          height="0.004"
+          depth="0.004"
+          color="#ffffff"
+        ></a-box>
 
-       
-      
+        <!-- 縦20 cm -->
+        <a-box
+          position="0 0 0"
+          width="0.004"
+          height="0.004"
+          depth="0.20"
+          color="#ffffff"
+        ></a-box>
 
-        <!-- 分子を入れる場所 -->
-        <a-entity id="gas-container"></a-entity>
+        <!-- 両端の目盛り -->
+        <a-box
+          position="-0.10 0 0"
+          width="0.004"
+          height="0.004"
+          depth="0.018"
+          color="#ffffff"
+        ></a-box>
 
-       <!-- ここに20 cmのx・y軸を追加 -->
-<a-entity id="scale-axes" position="0 0.5 0">
+        <a-box
+          position="0.10 0 0"
+          width="0.004"
+          height="0.004"
+          depth="0.018"
+          color="#ffffff"
+        ></a-box>
 
-        <!-- 照明 -->
-        <a-light type="ambient" intensity="1.0"></a-light>
-        <a-light
-          type="directional"
-          intensity="0.9"
-          position="1 2 1">
-        </a-light>
+        <a-box
+          position="0 0 -0.10"
+          width="0.018"
+          height="0.004"
+          depth="0.004"
+          color="#ffffff"
+        ></a-box>
+
+        <a-box
+          position="0 0 0.10"
+          width="0.018"
+          height="0.004"
+          depth="0.004"
+          color="#ffffff"
+        ></a-box>
       </a-entity>
+
+      <a-light
+        type="ambient"
+        intensity="1.15"
+      ></a-light>
+
+      <a-light
+        type="directional"
+        intensity="0.85"
+        position="1 2 1"
+      ></a-light>
     </a-marker>
 
     <a-entity camera></a-entity>
