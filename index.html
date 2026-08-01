@@ -7,11 +7,10 @@
   <title>1億倍の分子モデルAR</title>
 
   <!-- A-Frame -->
-  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
 
   <!-- AR.js -->
-  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js"></script>
-
+ <script src="https://cdn.jsdelivr.net/npm/@ar-js-org/ar.js@3.4.7/aframe/build/aframe-ar.min.js"></script>
   <style>
     html,
     body {
@@ -567,12 +566,17 @@
     共通の十字目盛りは実寸20 cmです。
   </div>
 
-  <a-scene
-    embedded
-    vr-mode-ui="enabled:false"
-    renderer="antialias:true; alpha:true; logarithmicDepthBuffer:true"
-    arjs="sourceType:webcam; debugUIEnabled:false; trackingMethod:best;"
-  >
+ <a-scene
+  embedded
+  renderer="antialias: true; colorManagement: true;"
+  arjs="
+    sourceType: webcam;
+    detectionMode: mono;
+    trackingMethod: best;
+    debugUIEnabled: false;
+  "
+  vr-mode-ui="enabled: false"
+>
     <!--
       新しいマーカーに変えるときは、
       下の pattern-air.patt を新しいファイル名に変更します。
