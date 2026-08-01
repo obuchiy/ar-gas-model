@@ -612,23 +612,28 @@ video {
       smooth-threshold="5"
     >
       <!-- 空気 -->
-      <a-entity id="gas-container"></a-entity>
+    <a-entity
+  id="gas-container"
+  scale="9.09 9.09 9.09">
+</a-entity>
 
       <!-- 水：最初は非表示 -->
-      <a-entity
-        id="water-container"
-        visible="false"
-      ></a-entity>
+    <a-entity
+  id="water-container"
+  visible="false"
+  scale="9.09 9.09 9.09">
+</a-entity>
 
       <!--
         共通の実寸20 cmスケール。
         マーカーを立てる前提なので、
         X方向が左右、Z方向が上下です。
       -->
-      <a-entity
-        id="scale-cross"
-        position="0 0.004 0"
-      >
+  <a-entity
+  id="scale-cross"
+  position="0 0.004 0"
+  scale="9.09 9.09 9.09">
+    
         <!-- 横20 cm -->
         <a-box
           position="0 0 0"
