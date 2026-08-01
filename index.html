@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>1 m³ 空気分子AR</title>
+
+  <!-- A-Frame と AR.js -->
+  <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@ar-js-org/ar.js@3.4.7/aframe/build/aframe-ar.min.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: sans-serif;
+    }
+
+    #panel {
+      position: fixed;
+      z-index: 10;
+      top: 10px;
+      left: 10px;
+      max-width: 310px;
+      padding: 10px 12px;
+      color: white;
+      background: rgba(0, 0, 0, 0.68);
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    #panel strong {
+      font-size: 16px;
+    }
+
+    #panel button {
+      margin-top: 8px;
+      padding: 7px 10px;
+      border: 0;
+      border-radius: 7px;
+      cursor: pointer;
+    }
+
+    #panel small {
+      display: inline-block;
+      margin-top: 4px;
+      color: #e7e7e7;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .red { color: #ff6b6b; }
+    .blue { color: #65a8ff; }
+  </style>
+
+  <script>
+    /*
+      1 m³の空気を長さ方向に1億倍して観察するモデル。
+      実際の1 m³中には室温・1気圧で約2.4×10^25個の分子がある。
+      長さを1億倍すると体積倍率は10^24倍なので、
+      この模型の1 m³には約24個が対応する。
+    */
+
+    const BOX_SIZE = 1.0;       // 立方体の一辺 [m]
+    const OXYGEN_COUNT = 5;     // O₂
+    const NITROGEN_COUNT = 19;  // N₂
+    const MOLECULE_RADIUS = 0.014;
+    const ATOM_SEPARATION = 0.012;
+
+    // 分子を立方体内で往復運動させるコンポーネント
+    AFRAME.registerComponent("gas-motion", {
+      schema: {
+        vx: { type: "number", default: 0.04 },
+        vy: { type: "number", default: 0.05 },
+        vz: { type: "number", default: 0.03 }
+      },
+
+      init: function () {
+        this.velocity = new THREE.Vector3(
+          this.data.vx,
+          this.data.vy,
+          this.data.vz
+        );
+      },
+
+      tick: function (time, deltaTime) {
+        if (!window.moleculesMoving) return;
+
+        const dt = Math.min(deltaTime / 1000, 0.05);
+        const p = this.el.object3D.position;
+        p.addScaledVector(this.velocity, dt);
+
+        // 分子が線から少しはみ出さないように余白を設ける
+        const minX = -0.47;
+        const maxX =  0.47;
+        const minY =  0.03;
+        const maxY =  0.97;
+        const minZ = -0.47;
+        const maxZ =  0.47;
+
+        if (p.x < minX || p.x > maxX) {
+          this.velocity.x *= -1;
+          p.x = THREE.MathUtils.clamp(p.x, minX, maxX);
+        }
+        if (p.y < minY || p.y > maxY) {
+          this.velocity.y *= -1;
+          p.y = THREE.MathUtils.clamp(p.y, minY, maxY);
+        }
+        if (p.z < minZ || p.z > maxZ) {
+          this.velocity.z *= -1;
+          p.z = THREE.MathUtils.clamp(p.z, minZ, maxZ);
+        }
+
+        // 飛び方が分かる程度のゆっくりした回転
+        this.el.object3D.rotation.y += dt * 0.7;
+        this.el.object3D.rotation.z += dt * 0.35;
+      }
+    });
+
+
+    // 立方体の右上に、常にカメラを向く日本語ラベルを表示する
+    AFRAME.registerComponent("model-info-label", {
+      init: function () {
+        const canvas = document.createElement("canvas");
+        canvas.width = 1024;
+        canvas.height = 620;
+
+        const context = canvas.getContext("2d");
+        context.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 半透明の背景
+        context.fillStyle = "rgba(0, 0, 0, 0.76)";
+        context.beginPath();
+        context.roundRect(20, 20, 984, 580, 38);
+        context.fill();
+
+        // 枠線
+        context.strokeStyle = "rgba(255, 255, 255, 0.9)";
+        context.lineWidth = 8;
+        context.stroke();
+
+        context.textBaseline = "top";
+        context.fillStyle = "#ffffff";
+        context.font = 'bold 72px "Noto Sans JP", "Yu Gothic", sans-serif';
+        context.fillText("1億倍 空気分子モデル", 70, 65);
+
+        const lines = [
+          "・一辺：1 m（体積 1 m³）",
+          "・乾燥空気の簡略モデル",
+          "・O₂：5個　N₂：19個",
+          "・水蒸気・Ar・CO₂などは省略",
+          "・運動速度は観察用に遅く表示"
+        ];
+
+        context.font = '46px "Noto Sans JP", "Yu Gothic", sans-serif';
+        let y = 165;
+        for (const line of lines) {
+          context.fillText(line, 75, y);
+          y += 78;
+        }
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.needsUpdate = true;
+
+        const material = new THREE.SpriteMaterial({
+          map: texture,
+          transparent: true,
+          depthTest: false
+        });
+
+        const sprite = new THREE.Sprite(material);
+
+        // 立方体の右上付近。Spriteなので常にカメラ方向を向く。
+        sprite.position.set(0.72, 1.12, 0);
+        sprite.scale.set(0.72, 0.44, 1);
+        sprite.renderOrder = 999;
+
+        this.el.object3D.add(sprite);
+      }
+    });
+
+    window.moleculesMoving = true;
+
+    // 再現可能な簡易乱数
+    function seededRandom(seed) {
+      let value = seed % 2147483647;
+      if (value <= 0) value += 2147483646;
+      return function () {
+        value = value * 16807 % 2147483647;
+        return (value - 1) / 2147483646;
+      };
+    }
+
+    const random = seededRandom(20260801);
+
+    function randomBetween(min, max) {
+      return min + (max - min) * random();
+    }
+
+    // 二原子分子を作る
+    function createDiatomicMolecule(color, label, index) {
+      const molecule = document.createElement("a-entity");
+
+      molecule.setAttribute(
+        "position",
+        `${randomBetween(-0.43, 0.43)}
+         ${randomBetween(0.08, 0.92)}
+         ${randomBetween(-0.43, 0.43)}`
+      );
+
+      molecule.setAttribute(
+        "rotation",
+        `${randomBetween(0, 360)}
+         ${randomBetween(0, 360)}
+         ${randomBetween(0, 360)}`
+      );
+
+      const speed = randomBetween(0.035, 0.075);
+      const vx = speed * (random() < 0.5 ? -1 : 1);
+      const vy = speed * (random() < 0.5 ? -1 : 1);
+      const vz = speed * (random() < 0.5 ? -1 : 1);
+      molecule.setAttribute("gas-motion", `vx:${vx}; vy:${vy}; vz:${vz}`);
+
+      // 原子1
+      const atom1 = document.createElement("a-sphere");
+      atom1.setAttribute("radius", MOLECULE_RADIUS);
+      atom1.setAttribute("position", `${-ATOM_SEPARATION / 2} 0 0`);
+      atom1.setAttribute(
+        "material",
+        `color:${color}; roughness:0.35; metalness:0.05`
+      );
+
+      // 原子2
+      const atom2 = document.createElement("a-sphere");
+      atom2.setAttribute("radius", MOLECULE_RADIUS);
+      atom2.setAttribute("position", `${ATOM_SEPARATION / 2} 0 0`);
+      atom2.setAttribute(
+        "material",
+        `color:${color}; roughness:0.35; metalness:0.05`
+      );
+
+      molecule.setAttribute("data-label", `${label}${index + 1}`);
+      molecule.appendChild(atom1);
+      molecule.appendChild(atom2);
+      return molecule;
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      const gasContainer = document.querySelector("#gas-container");
+
+      // 酸素分子：赤5個
+      for (let i = 0; i < OXYGEN_COUNT; i++) {
+        gasContainer.appendChild(
+          createDiatomicMolecule("#e53935", "O2-", i)
+        );
+      }
+
+      // 窒素分子：青19個
+      for (let i = 0; i < NITROGEN_COUNT; i++) {
+        gasContainer.appendChild(
+          createDiatomicMolecule("#1565c0", "N2-", i)
+        );
+      }
+
+      document.querySelector("#motionButton").addEventListener("click", (event) => {
+        window.moleculesMoving = !window.moleculesMoving;
+        event.target.textContent =
+          window.moleculesMoving ? "分子運動を止める" : "分子運動を再開";
+      });
+    });
+  </script>
+</head>
+
+<body>
+  <div id="panel">
+    <strong>1 m³ 空気分子モデル</strong><br />
+    一辺：1 m<br />
+    <span class="red">● 酸素分子 O₂：5個</span><br />
+    <span class="blue">● 窒素分子 N₂：19個</span><br />
+    合計：24個<br />
+    長さを1億倍した乾燥空気モデル<br />
+    <small>
+      水蒸気・Ar・CO₂などは省略<br />
+      速度は観察しやすいように調整
+    </small><br />
+    <button id="motionButton">分子運動を止める</button>
+  </div>
+
+  <a-scene
+    embedded
+    renderer="antialias: true; colorManagement: true;"
+    arjs="sourceType: webcam;
+          detectionMode: mono;
+          trackingMethod: best;
+          debugUIEnabled: false;"
+    vr-mode-ui="enabled: false"
+  >
+    <!--
+      Hiroマーカーの実物幅を10 cmとして認識させる。
+      AR.jsではsizeをメートル単位で指定する。
+    -->
+    <!--
+      オリジナルマーカー版
+      印刷した黒い外枠の一辺を10.0 cmにする。
+      AR.jsでは実寸をメートル単位で指定するため size="0.10"。
+      pattern-air.patt は index.html と同じフォルダーに置く。
+    -->
+    <a-marker
+      type="pattern"
+      url="./pattern-air.patt"
+      size="0.10"
+      smooth="true"
+      smooth-count="10"
+      smooth-tolerance="0.01"
+      smooth-threshold="5">
+
+      <!--
+        マーカー面を立方体の底面中央とする。
+        立方体の中心は床から0.5 m上。
+      -->
+      <a-entity id="model-root" model-info-label>
+
+        <!-- 1 m³の透明な立方体 -->
+        <a-box
+          position="0 0.5 0"
+          width="1"
+          height="1"
+          depth="1"
+          material="color:#ffffff;
+                    transparent:true;
+                    opacity:0.72;
+                    wireframe:true">
+        </a-box>
+
+        <!-- 底面を分かりやすくする薄い面 -->
+        <a-plane
+          position="0 0.002 0"
+          rotation="-90 0 0"
+          width="1"
+          height="1"
+          material="color:#d7ecff;
+                    transparent:true;
+                    opacity:0.12;
+                    side:double">
+        </a-plane>
+
+        <!-- 分子を入れる場所 -->
+        <a-entity id="gas-container"></a-entity>
+
+        <!-- 一辺1 mの表示 -->
+        <a-text
+          value="1 m"
+          position="0 -0.055 0.52"
+          rotation="-90 0 0"
+          align="center"
+          color="#ffffff"
+          width="0.35">
+        </a-text>
+
+        <!-- 照明 -->
+        <a-light type="ambient" intensity="1.0"></a-light>
+        <a-light
+          type="directional"
+          intensity="0.9"
+          position="1 2 1">
+        </a-light>
+      </a-entity>
+    </a-marker>
+
+    <a-entity camera></a-entity>
+  </a-scene>
+</body>
+</html>
