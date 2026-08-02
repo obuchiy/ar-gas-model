@@ -144,14 +144,14 @@ video {
     const NITROGEN_COUNT = 19;
 
     // 20 cm角（8.0 L）の液体の水
-    const WATER_COUNT = 268;
+    const WATER_COUNT = 290;
 
     // 分子模型の大きさ（m）
     const GAS_ATOM_RADIUS = 0.014;
     const GAS_ATOM_SEPARATION = 0.012;
 
-    const WATER_O_RADIUS = 0.010;
-    const WATER_H_RADIUS = 0.0065;
+    const WATER_O_RADIUS = 0.015;
+    const WATER_H_RADIUS = 0.010;
 
     function randomBetween(min, max) {
       return min + Math.random() * (max - min);
@@ -228,11 +228,11 @@ video {
       20 cm角の範囲内で、初期位置の周囲を小さく揺れます。
       気体のように長距離を直線運動させません。
     */
-    AFRAME.registerComponent("liquid-motion", {
+   AFRAME.registerComponent("liquid-motion", {
   schema: {
-    vx: { type: "number", default: 0.05 },
-    vy: { type: "number", default: 0.05 },
-    vz: { type: "number", default: 0.05 }
+    vx: { type: "number", default: 0.01 },
+    vy: { type: "number", default: 0.01 },
+    vz: { type: "number", default: 0.01 }
   },
 
   init: function () {
@@ -249,17 +249,17 @@ video {
 
     position.addScaledVector(this.velocity, dt);
 
-    // 水の存在範囲：実寸約20 cm角
-    const minX = -0.82;
-    const maxX =  0.82;
+    // 水分子が存在する約20 cm角の範囲
+    const minX = -0.085;
+    const maxX =  0.085;
 
-    const minZ = -0.82;
-    const maxZ =  0.82;
-
-    const nearY = DEPTH_SIGN * 0.12;
-    const farY  = DEPTH_SIGN * 1.70;
+    const nearY = DEPTH_SIGN * 0.015;
+    const farY  = DEPTH_SIGN * 0.185;
     const minY = Math.min(nearY, farY);
     const maxY = Math.max(nearY, farY);
+
+    const minZ = -0.085;
+    const maxZ =  0.085;
 
     if (position.x <= minX || position.x >= maxX) {
       this.velocity.x *= -1;
@@ -276,13 +276,13 @@ video {
       position.z = THREE.MathUtils.clamp(position.z, minZ, maxZ);
     }
 
-    // 周囲の影響で進行方向が少しずつ変わる模式的な動き
-    this.velocity.x += (Math.random() - 0.5) * 0.015;
-    this.velocity.y += (Math.random() - 0.5) * 0.015;
-    this.velocity.z += (Math.random() - 0.5) * 0.015;
+    // 周囲の分子の影響を受けるような不規則な動き
+    this.velocity.x += (Math.random() - 0.5) * 0.001;
+    this.velocity.y += (Math.random() - 0.5) * 0.001;
+    this.velocity.z += (Math.random() - 0.5) * 0.001;
 
-    // 気体ほど速くしない
-    this.velocity.clampLength(0.04, 0.12);
+    // 気体ほど速くならないよう制限
+    this.velocity.clampLength(0.006, 0.020);
   }
 });
     function createDiatomicMolecule(color, label, index) {
@@ -348,12 +348,12 @@ video {
     function createWaterMolecule(index, position) {
       const molecule = document.createElement("a-entity");
 
-      molecule.setAttribute(
+    molecule.setAttribute(
   "liquid-motion",
   [
-    `vx:${randomSignedSpeed(0.04, 0.10)}`,
-    `vy:${randomSignedSpeed(0.04, 0.10)}`,
-    `vz:${randomSignedSpeed(0.04, 0.10)}`
+    `vx:${randomSignedSpeed(0.006, 0.018)}`,
+    `vy:${randomSignedSpeed(0.006, 0.018)}`,
+    `vz:${randomSignedSpeed(0.006, 0.018)}`
   ].join(";")
 );
 
@@ -443,9 +443,9 @@ video {
         for (let iy = 0; iy < ny; iy++) {
           for (let iz = 0; iz < nz; iz++) {
             positions.push({
-              x: minX + ix * stepX + randomBetween(-0.002, 0.002),
-              y: minY + iy * stepY + randomBetween(-0.002, 0.002),
-              z: minZ + iz * stepZ + randomBetween(-0.002, 0.002)
+              x: minX + ix * stepX + randomBetween(-0.008, 0.008),
+              y: minY + iy * stepY + randomBetween(-0.008, 0.008),
+              z: minZ + iz * stepZ + randomBetween(-0.008, 0.008)
             });
           }
         }
