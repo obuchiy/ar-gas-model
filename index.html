@@ -147,11 +147,11 @@ video {
     const WATER_COUNT = 290;
 
     // 分子模型の大きさ（m）
-    const GAS_ATOM_RADIUS = 0.015;
-    const GAS_ATOM_SEPARATION = 0.012;
+    const GAS_ATOM_RADIUS = 0.0125;
+    const GAS_ATOM_SEPARATION = 0.010;
 
-    const WATER_O_RADIUS = 0.015;
-    const WATER_H_RADIUS = 0.010;
+    const WATER_O_RADIUS = 0.0125;
+    const WATER_H_RADIUS = 0.0083;
 
     function randomBetween(min, max) {
       return min + Math.random() * (max - min);
@@ -382,7 +382,7 @@ const maxY = Math.max(nearY, farY);
       // 水素原子：白
       const hydrogen1 = document.createElement("a-sphere");
       hydrogen1.setAttribute("radius", WATER_H_RADIUS);
-      hydrogen1.setAttribute("position", "0.011 0.008 0");
+      hydrogen1.setAttribute("position", "0.0092 0.0067 0");
       hydrogen1.setAttribute(
         "material",
         "color:#ffffff; roughness:0.35; metalness:0.05"
@@ -390,7 +390,7 @@ const maxY = Math.max(nearY, farY);
 
       const hydrogen2 = document.createElement("a-sphere");
       hydrogen2.setAttribute("radius", WATER_H_RADIUS);
-      hydrogen2.setAttribute("position", "-0.011 0.008 0");
+      hydrogen2.setAttribute("position", "-0.0092 0.0067 0");
       hydrogen2.setAttribute(
         "material",
         "color:#ffffff; roughness:0.35; metalness:0.05"
