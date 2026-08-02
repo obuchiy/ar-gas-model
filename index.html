@@ -23,21 +23,27 @@
         "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
     }
 
-    #infoPanel {
-      position: fixed;
-      top: 12px;
-      left: 12px;
-      z-index: 20;
-      width: min(370px, calc(100vw - 48px));
-      padding: 16px 18px;
-      border: 1px solid rgba(255, 255, 255, 0.55);
-      border-radius: 12px;
-      color: #fff;
-      background: rgba(0, 0, 0, 0.72);
-      line-height: 1.55;
-      font-size: 15px;
-      backdrop-filter: blur(4px);
-    }
+  #infoPanel {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 20;
+
+  width: min(360px, calc(100vw - 48px));
+  padding: 14px 16px;
+
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.72);
+
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 12px;
+
+  font-size: 14px;
+  line-height: 1.55;
+
+  box-sizing: border-box;
+  backdrop-filter: blur(5px);
+}
 
     #panelTitle {
       display: inline-block;
@@ -630,135 +636,87 @@ const maxY = Math.max(nearY, farY);
       smooth-tolerance="0.01"
       smooth-threshold="5"
     >
-      <!-- 空気 -->
-    <a-entity
-  id="gas-container"
-  scale="9.09 9.09 9.09">
+
+<a-entity id="model-root" position="0 0 0">
+
+  <!-- 空気 -->
+  <a-entity
+    id="gas-container"
+    scale="9.09 9.09 9.09">
+  </a-entity>
+
+  <!-- 水：最初は非表示 -->
+  <a-entity
+    id="water-container"
+    visible="false"
+    scale="9.09 9.09 9.09">
+  </a-entity>
+
+  <!-- 共通の実寸20 cm十字 -->
+  <a-entity
+    id="scale-cross"
+    position="0 0.01 0"
+    scale="9.09 9.09 9.09">
+
+    <!-- 横20 cm -->
+    <a-box
+      position="0 0 0"
+      width="0.20"
+      height="0.004"
+      depth="0.004"
+      color="#ffffff">
+    </a-box>
+
+    <!-- 縦20 cm -->
+    <a-box
+      position="0 0 0"
+      width="0.004"
+      height="0.004"
+      depth="0.20"
+      color="#ffffff">
+    </a-box>
+
+    <!-- 左端 -->
+    <a-box
+      position="-0.10 0 0"
+      width="0.004"
+      height="0.004"
+      depth="0.018"
+      color="#ffffff">
+    </a-box>
+
+    <!-- 右端 -->
+    <a-box
+      position="0.10 0 0"
+      width="0.004"
+      height="0.004"
+      depth="0.018"
+      color="#ffffff">
+    </a-box>
+
+    <!-- 下端 -->
+    <a-box
+      position="0 0 -0.10"
+      width="0.018"
+      height="0.004"
+      depth="0.004"
+      color="#ffffff">
+    </a-box>
+
+    <!-- 上端 -->
+    <a-box
+      position="0 0 0.10"
+      width="0.018"
+      height="0.004"
+      depth="0.004"
+      color="#ffffff">
+    </a-box>
+
+  </a-entity>
+
 </a-entity>
 
-      <!-- 水：最初は非表示 -->
-    <a-entity
-  id="water-container"
-  visible="false"
-  scale="9.09 9.09 9.09">
-</a-entity>
-
-      <!--
-        共通の実寸20 cmスケール。
-        マーカーを立てる前提なので、
-        X方向が左右、Z方向が上下です。
-      -->
-<a-entity
-  id="scale-cross"
-  position="0 0.10 0"
-  scale="9.09 9.09 9.09"
->
-
-  <!-- 横20 cm -->
-  <a-box
-    position="0 0 0"
-    width="0.20"
-    height="0.004"
-    depth="0.004"
-    color="#ffffff">
-  </a-box>
-
-  <!-- 縦20 cm -->
-  <a-box
-    position="0 0 0"
-    width="0.004"
-    height="0.004"
-    depth="0.20"
-    color="#ffffff">
-  </a-box>
-
-  <!-- 左右 -->
-  <a-box
-    position="-0.10 0 0"
-    width="0.004"
-    height="0.004"
-    depth="0.018"
-    color="#ffffff">
-  </a-box>
-
-  <a-box
-    position="0.10 0 0"
-    width="0.004"
-    height="0.004"
-    depth="0.018"
-    color="#ffffff">
-  </a-box>
-
-  <!-- 上下 -->
-  <a-box
-    position="0 0 -0.10"
-    width="0.018"
-    height="0.004"
-    depth="0.004"
-    color="#ffffff">
-  </a-box>
-
-  <a-box
-    position="0 0 0.10"
-    width="0.018"
-    height="0.004"
-    depth="0.004"
-    color="#ffffff">
-  </a-box>
-
-</a-entity>    
-        <!-- 横20 cm -->
-        <a-box
-          position="0 0 0"
-          width="0.20"
-          height="0.004"
-          depth="0.004"
-          color="#ffffff"
-        ></a-box>
-
-        <!-- 縦20 cm -->
-        <a-box
-          position="0 0 0"
-          width="0.004"
-          height="0.004"
-          depth="0.20"
-          color="#ffffff"
-        ></a-box>
-
-        <!-- 両端の目盛り -->
-        <a-box
-          position="-0.10 0 0"
-          width="0.004"
-          height="0.004"
-          depth="0.018"
-          color="#ffffff"
-        ></a-box>
-
-        <a-box
-          position="0.10 0 0"
-          width="0.004"
-          height="0.004"
-          depth="0.018"
-          color="#ffffff"
-        ></a-box>
-
-        <a-box
-          position="0 0 -0.10"
-          width="0.018"
-          height="0.004"
-          depth="0.004"
-          color="#ffffff"
-        ></a-box>
-
-        <a-box
-          position="0 0 0.10"
-          width="0.018"
-          height="0.004"
-          depth="0.004"
-          color="#ffffff"
-        ></a-box>
-      </a-entity>
-
+      
       <a-light
         type="ambient"
         intensity="1.15"
