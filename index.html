@@ -648,72 +648,65 @@ const maxY = Math.max(nearY, farY);
         マーカーを立てる前提なので、
         X方向が左右、Z方向が上下です。
       -->
- <a-entity
-  id="scale-cross"
-
-  <a-box
-    position="0 0 0"
-    width="0.003"
-    height="0.003"
-    depth="1.00"
-    color="#ffff00">
-  </a-box>
-</a-entity>
-  position="0 0.04 0"
+<a-entity
+  id="scale-cross"
+  position="0 0.10 0"
+  scale="9.09 9.09 9.09"
 >
-  <!-- 横20 cm -->
-  <a-box
-    position="0 0 0"
-    width="1.82"
-    height="0.035"
-    depth="0.035"
-    color="#ffffff">
-  </a-box>
 
-  <!-- 縦20 cm -->
-  <a-box
-    position="0 0 0"
-    width="0.035"
-    height="0.035"
-    depth="1.82"
-    color="#ffffff">
-  </a-box>
+  <!-- 横20 cm -->
+  <a-box
+    position="0 0 0"
+    width="0.20"
+    height="0.004"
+    depth="0.004"
+    color="#ffffff">
+  </a-box>
 
-  <!-- 横軸の両端 -->
-  <a-box
-    position="-0.91 0 0"
-    width="0.035"
-    height="0.035"
-    depth="0.16"
-    color="#ffffff">
-  </a-box>
+  <!-- 縦20 cm -->
+  <a-box
+    position="0 0 0"
+    width="0.004"
+    height="0.004"
+    depth="0.20"
+    color="#ffffff">
+  </a-box>
 
-  <a-box
-    position="0.91 0 0"
-    width="0.035"
-    height="0.035"
-    depth="0.16"
-    color="#ffffff">
-  </a-box>
+  <!-- 左右 -->
+  <a-box
+    position="-0.10 0 0"
+    width="0.004"
+    height="0.004"
+    depth="0.018"
+    color="#ffffff">
+  </a-box>
 
-  <!-- 縦軸の両端 -->
-  <a-box
-    position="0 0 -0.91"
-    width="0.16"
-    height="0.035"
-    depth="0.035"
-    color="#ffffff">
-  </a-box>
+  <a-box
+    position="0.10 0 0"
+    width="0.004"
+    height="0.004"
+    depth="0.018"
+    color="#ffffff">
+  </a-box>
 
-  <a-box
-    position="0 0 0.91"
-    width="0.16"
-    height="0.035"
-    depth="0.035"
-    color="#ffffff">
-  </a-box>
-</a-entity>
-    
+  <!-- 上下 -->
+  <a-box
+    position="0 0 -0.10"
+    width="0.018"
+    height="0.004"
+    depth="0.004"
+    color="#ffffff">
+  </a-box>
+
+  <a-box
+    position="0 0 0.10"
+    width="0.018"
+    height="0.004"
+    depth="0.004"
+    color="#ffffff">
+  </a-box>
+
+</a-entity>    
         <!-- 横20 cm -->
         <a-box
           position="0 0 0"
