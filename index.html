@@ -147,7 +147,7 @@ video {
     const WATER_COUNT = 290;
 
     // 分子模型の大きさ（m）
-    const GAS_ATOM_RADIUS = 0.014;
+    const GAS_ATOM_RADIUS = 0.015;
     const GAS_ATOM_SEPARATION = 0.012;
 
     const WATER_O_RADIUS = 0.015;
@@ -190,19 +190,20 @@ video {
 
         position.addScaledVector(this.velocity, dt);
 
-        // マーカー面上の横方向
-        const minX = -4.55;
-        const maxX =  4.55;
+       // マーカー面上の横方向
+const minX = -0.50;
+const maxX =  0.50;
 
-        // マーカー面上の縦方向
-        const minZ = -4.55;
-        const maxZ =  4.55;
+// マーカー面上の縦方向
+const minZ = -0.50;
+const maxZ =  0.50;
 
-        // マーカー面から向こう側へ約1 m
-        const nearY = DEPTH_SIGN * 0.15;
-        const farY  = DEPTH_SIGN * 9.10;
-        const minY = Math.min(nearY, farY);
-        const maxY = Math.max(nearY, farY);
+// マーカー面から向こう側へ1 m
+const nearY = DEPTH_SIGN * 0.00;
+const farY  = DEPTH_SIGN * 1.00;
+
+const minY = Math.min(nearY, farY);
+const maxY = Math.max(nearY, farY);
 
         if (position.x <= minX || position.x >= maxX) {
           this.velocity.x *= -1;
@@ -288,24 +289,14 @@ video {
     function createDiatomicMolecule(color, label, index) {
       const molecule = document.createElement("a-entity");
 
-      molecule.setAttribute(
-        "position",
-        [
-          randomBetween(-4.30, 4.30),
-          DEPTH_SIGN * randomBetween(0.30, 8.80),
-          randomBetween(-4.30, 4.30)
-        ].join(" ")
-      );
-
-      molecule.setAttribute(
-        "rotation",
-        [
-          randomBetween(0, 360),
-          randomBetween(0, 360),
-          randomBetween(0, 360)
-        ].join(" ")
-      );
-
+     molecule.setAttribute(
+  "position",
+  [
+    randomBetween(-0.48, 0.48),
+    DEPTH_SIGN * randomBetween(0.02, 0.98),
+    randomBetween(-0.48, 0.48)
+  ].join(" ")
+);
       molecule.setAttribute(
         "gas-motion",
         [
@@ -501,7 +492,7 @@ video {
         );
       }
 
-      // 水分子 H2O：約268個
+      // 水分子 H2O：約290個
       const waterPositions =
         createWaterPositions(WATER_COUNT);
 
@@ -530,7 +521,7 @@ video {
             観察範囲：20 cm × 20 cm × 20 cm<br />
             体積：8.0 L<br />
             <span class="red">
-              ● 水分子 H₂O：約268個
+              ● 水分子 H₂O：約290個
             </span><br />
             酸素原子：赤　水素原子：白<br />
             <small>
