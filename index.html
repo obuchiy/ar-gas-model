@@ -191,16 +191,16 @@ video {
         position.addScaledVector(this.velocity, dt);
 
         // マーカー面上の横方向
-        const minX = -0.47;
-        const maxX =  0.47;
+        const minX = -4.55;
+        const maxX =  4.55;
 
         // マーカー面上の縦方向
-        const minZ = -0.47;
-        const maxZ =  0.47;
+        const minZ = -4.55;
+        const maxZ =  4.55;
 
         // マーカー面から向こう側へ約1 m
-        const nearY = DEPTH_SIGN * 0.03;
-        const farY  = DEPTH_SIGN * 0.97;
+        const nearY = DEPTH_SIGN * 0.15;
+        const farY  = DEPTH_SIGN * 9.10;
         const minY = Math.min(nearY, farY);
         const maxY = Math.max(nearY, farY);
 
@@ -229,47 +229,71 @@ video {
       気体のように長距離を直線運動させません。
     */
     AFRAME.registerComponent("liquid-motion", {
-      schema: {
-        amplitude: { type: "number", default: 0.0025 },
-        speed: { type: "number", default: 2.0 },
-        phaseX: { type: "number", default: 0 },
-        phaseY: { type: "number", default: 0 },
-        phaseZ: { type: "number", default: 0 }
-      },
+  schema: {
+    vx: { type: "number", default: 0.05 },
+    vy: { type: "number", default: 0.05 },
+    vz: { type: "number", default: 0.05 }
+  },
 
-      init: function () {
-        const p = this.el.object3D.position;
-        this.basePosition = new THREE.Vector3(p.x, p.y, p.z);
-      },
+  init: function () {
+    this.velocity = new THREE.Vector3(
+      this.data.vx,
+      this.data.vy,
+      this.data.vz
+    );
+  },
 
-      tick: function (time) {
-        const t = time / 1000;
-        const d = this.data;
-        const p = this.el.object3D.position;
+  tick: function (_time, deltaTime) {
+    const dt = Math.min(deltaTime / 1000, 0.05);
+    const position = this.el.object3D.position;
 
-        p.x =
-          this.basePosition.x +
-          d.amplitude * Math.sin(d.speed * t + d.phaseX);
+    position.addScaledVector(this.velocity, dt);
 
-        p.y =
-          this.basePosition.y +
-          d.amplitude * Math.sin(d.speed * 0.83 * t + d.phaseY);
+    // 水の存在範囲：実寸約20 cm角
+    const minX = -0.82;
+    const maxX =  0.82;
 
-        p.z =
-          this.basePosition.z +
-          d.amplitude * Math.sin(d.speed * 1.17 * t + d.phaseZ);
-      }
-    });
+    const minZ = -0.82;
+    const maxZ =  0.82;
 
+    const nearY = DEPTH_SIGN * 0.12;
+    const farY  = DEPTH_SIGN * 1.70;
+    const minY = Math.min(nearY, farY);
+    const maxY = Math.max(nearY, farY);
+
+    if (position.x <= minX || position.x >= maxX) {
+      this.velocity.x *= -1;
+      position.x = THREE.MathUtils.clamp(position.x, minX, maxX);
+    }
+
+    if (position.y <= minY || position.y >= maxY) {
+      this.velocity.y *= -1;
+      position.y = THREE.MathUtils.clamp(position.y, minY, maxY);
+    }
+
+    if (position.z <= minZ || position.z >= maxZ) {
+      this.velocity.z *= -1;
+      position.z = THREE.MathUtils.clamp(position.z, minZ, maxZ);
+    }
+
+    // 周囲の影響で進行方向が少しずつ変わる模式的な動き
+    this.velocity.x += (Math.random() - 0.5) * 0.015;
+    this.velocity.y += (Math.random() - 0.5) * 0.015;
+    this.velocity.z += (Math.random() - 0.5) * 0.015;
+
+    // 気体ほど速くしない
+    this.velocity.clampLength(0.04, 0.12);
+  }
+});
     function createDiatomicMolecule(color, label, index) {
       const molecule = document.createElement("a-entity");
 
       molecule.setAttribute(
         "position",
         [
-          randomBetween(-0.43, 0.43),
-          DEPTH_SIGN * randomBetween(0.08, 0.92),
-          randomBetween(-0.43, 0.43)
+          randomBetween(-4.30, 4.30),
+          DEPTH_SIGN * randomBetween(0.30, 8.80),
+          randomBetween(-4.30, 4.30)
         ].join(" ")
       );
 
@@ -285,9 +309,9 @@ video {
       molecule.setAttribute(
         "gas-motion",
         [
-          `vx:${randomSignedSpeed(0.10, 0.22)}`,
-          `vy:${randomSignedSpeed(0.10, 0.22)}`,
-          `vz:${randomSignedSpeed(0.10, 0.22)}`
+          `vx:${randomSignedSpeed(0.80, 1.5)}`,
+          `vy:${randomSignedSpeed(0.80, 1.5)}`,
+          `vz:${randomSignedSpeed(0.80, 1.5)}`
         ].join(";")
       );
 
@@ -325,9 +349,13 @@ video {
       const molecule = document.createElement("a-entity");
 
       molecule.setAttribute(
-        "position",
-        `${position.x} ${position.y} ${position.z}`
-      );
+  "liquid-motion",
+  [
+    `vx:${randomSignedSpeed(0.04, 0.10)}`,
+    `vy:${randomSignedSpeed(0.04, 0.10)}`,
+    `vz:${randomSignedSpeed(0.04, 0.10)}`
+  ].join(";")
+);
 
       molecule.setAttribute(
         "rotation",
