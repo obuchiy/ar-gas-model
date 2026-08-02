@@ -650,6 +650,29 @@ const maxY = Math.max(nearY, farY);
       -->
  <a-entity
   id="scale-cross"
+
+  <!-- 確認用：気体1 m範囲の十字 -->
+<a-entity
+  id="gas-range-check"
+  position="0 0.006 0"
+  scale="9.09 9.09 9.09"
+>
+  <a-box
+    position="0 0 0"
+    width="1.00"
+    height="0.003"
+    depth="0.003"
+    color="#ffff00">
+  </a-box>
+
+  <a-box
+    position="0 0 0"
+    width="0.003"
+    height="0.003"
+    depth="1.00"
+    color="#ffff00">
+  </a-box>
+</a-entity>
   position="0 0.04 0"
 >
   <!-- 横20 cm -->
